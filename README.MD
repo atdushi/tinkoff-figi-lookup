@@ -1,6 +1,6 @@
 # Tinkoff FIGI lookup
 
-Приложение по работе с [Tinkoff API](https://github.com/RussianInvestments/invest-api-java-sdk).
+Приложение по работе с [Tinkoff API](https://github.com/Tinkoff/invest-python).
 Токен задается через переменную окружения **tinkoff_sandbox_token**.
 
 
