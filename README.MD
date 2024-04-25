@@ -17,6 +17,7 @@ uvicorn main:app --port 8001 --reload
 http://127.0.0.1:8001/ticker/SBER
 http://127.0.0.1:8001/candles/USD000UTSTOM
 http://127.0.0.1:8001/operations
+http://127.0.0.1:8001/portfolio
 
 ### Django
 Create Django project

@@ -5,9 +5,11 @@ import pandas as pd
 import uvicorn
 from fastapi import FastAPI
 from pandas import DataFrame
-from tinkoff.invest import Client, OperationsResponse, Operation, CandleInterval
+from tinkoff.invest import Client, OperationsResponse, Operation, CandleInterval, PortfolioResponse, PortfolioPosition
 from tinkoff.invest.constants import INVEST_GRPC_API_SANDBOX
 from tinkoff.invest.services import InstrumentsService
+from fastapi.encoders import jsonable_encoder
+from fastapi.responses import JSONResponse
 
 app = FastAPI()
 TOKEN = os.getenv('tinkoff_sandbox_token')
@@ -107,6 +109,34 @@ def read_candles(figi: str):
         print(df.tail())
 
         return df.to_json()
+
+
+@app.get("/portfolio")
+def read_portfolio():
+    with Client(TOKEN, target=INVEST_GRPC_API_SANDBOX) as client:
+        account_id = client.users.get_accounts().accounts[0].id
+
+        r: PortfolioResponse = client.operations.get_portfolio(account_id=account_id)
+        df = pd.DataFrame([portfolio_pose_todict(p) for p in r.positions])
+
+        print(df.tail())
+
+        json_compatible_item_data = jsonable_encoder(df)
+        return JSONResponse(content=json_compatible_item_data)
+
+
+def portfolio_pose_todict(p: PortfolioPosition):
+    r = {
+        'figi': p.figi,
+        'quantity': cast_money(p.quantity),
+        'expected_yield': cast_money(p.expected_yield),
+        'instrument_type': p.instrument_type,
+        'average_buy_price': cast_money(p.average_position_price),
+        'currency': p.average_position_price.currency,
+        'nkd': cast_money(p.current_nkd),
+    }
+
+    return r
 
 
 if __name__ == "__main__":
