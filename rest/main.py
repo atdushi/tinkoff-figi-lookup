@@ -1,11 +1,11 @@
 import os
-import uvicorn
+from datetime import datetime, timedelta
+
 import pandas as pd
-from datetime import datetime
-from pandas import DataFrame
+import uvicorn
 from fastapi import FastAPI
-from starlette.responses import JSONResponse
-from tinkoff.invest import Client, OperationsResponse, Operation
+from pandas import DataFrame
+from tinkoff.invest import Client, OperationsResponse, Operation, CandleInterval
 from tinkoff.invest.constants import INVEST_GRPC_API_SANDBOX
 from tinkoff.invest.services import InstrumentsService
 
@@ -83,6 +83,30 @@ def operation_todict(o: Operation, account_id: str):
 
 def cast_money(v):
     return v.units + v.nano / 1e9  # nano - 9 нулей
+
+
+@app.get("/candles/{figi}")
+def read_candles(figi: str):
+    with Client(TOKEN, target=INVEST_GRPC_API_SANDBOX) as client:
+        response = client.market_data.get_candles(
+            figi=figi,  # 'USD000UTSTOM'
+            from_=datetime.now() - timedelta(days=7),
+            to=datetime.now(),
+            interval=CandleInterval.CANDLE_INTERVAL_HOUR
+        )
+
+        df = DataFrame([{
+            'time': c.time,
+            'volume': c.volume,
+            'open': cast_money(c.open),
+            'close': cast_money(c.close),
+            'high': cast_money(c.high),
+            'low': cast_money(c.low),
+        } for c in response.candles])
+
+        print(df.tail())
+
+        return df.to_json()
 
 
 if __name__ == "__main__":
