@@ -4,12 +4,11 @@ from datetime import datetime, timedelta
 import pandas as pd
 import uvicorn
 from fastapi import FastAPI
+from fastapi.responses import Response
 from pandas import DataFrame
 from tinkoff.invest import Client, OperationsResponse, Operation, CandleInterval, PortfolioResponse, PortfolioPosition
 from tinkoff.invest.constants import INVEST_GRPC_API_SANDBOX
 from tinkoff.invest.services import InstrumentsService
-from fastapi.encoders import jsonable_encoder
-from fastapi.responses import JSONResponse
 
 app = FastAPI()
 TOKEN = os.getenv('tinkoff_sandbox_token')
@@ -62,7 +61,7 @@ def read_operations():
         df = pd.DataFrame([operation_todict(p, account_id) for p in r.operations])
         print(df.tail().to_json())
 
-        return df.to_json(force_ascii=False)
+        return Response(content=df.to_json(force_ascii=False), media_type='application/json')
 
 
 def operation_todict(o: Operation, account_id: str):
@@ -108,7 +107,7 @@ def read_candles(figi: str):
 
         print(df.tail())
 
-        return df.to_json()
+        return Response(content=df.to_json(), media_type='application/json')
 
 
 @app.get("/portfolio")
@@ -121,8 +120,7 @@ def read_portfolio():
 
         print(df.tail())
 
-        json_compatible_item_data = jsonable_encoder(df)
-        return JSONResponse(content=json_compatible_item_data)
+        return Response(content=df.to_json(), media_type='application/json')
 
 
 def portfolio_pose_todict(p: PortfolioPosition):
